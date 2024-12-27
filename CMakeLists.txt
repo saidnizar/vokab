@@ -17,8 +17,8 @@ find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
 add_executable(Vokab
   src/main.cpp
-  src/vokab.cpp
-  src/vokab.h
+  src/mainWindow.cpp
+  src/mainWindow.h
 )
 
 target_link_libraries(Vokab PRIVATE Qt5::Widgets)
