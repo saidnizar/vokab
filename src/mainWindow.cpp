@@ -1,8 +1,10 @@
-#include "mainWindow.h"
-#include "stylesheet.h"
 #include <iostream>
 #include <QFormLayout>
 #include <QLineEdit>
+
+#include "authDialog.h"
+#include "mainWindow.h"
+#include "user.h"
 
 using namespace std;
 MainWindow::MainWindow(QWidget *parent)
@@ -78,7 +80,6 @@ MainWindow::~MainWindow()
   delete m_layout;
   delete m_welcome_label;
   delete m_central_widget;
-	if (m_dialog) delete m_dialog;
 	delete m_login_action;
 	delete m_register_action;
 	if (m_logout_action) delete m_logout_action;
@@ -86,64 +87,41 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::onLoginClicked() {
-    // Handle login button click
-    createRegisterOrLoginDialog(this, MainWindow::DIAG_TYPE::LOGIN);
-    m_dialog->exec(); // Show login dialog
+  AuthDialog dialog(AuthDialog::Login, this);
+  if (dialog.exec() == QDialog::Accepted) {
+    // Retrieve user inputs from the dialog
+    QString username = dialog.getUsername();
+    QString password = dialog.getPassword();
+    User &user = User::getInstance();
+    if (user.logInUser(username.toStdString(), password.toStdString())) {
+      QMessageBox::information(this, "Vokab", " Welcome to Vokab " + username);
+      onRegisterOrLoginClicked();
+    } else {
+      QMessageBox::information(this, "Vokab", " user does not exist");
+    }
+  }
 }
 
 void MainWindow::onRegisterClicked() {
-    // Handle register button click
-    createRegisterOrLoginDialog(this, MainWindow::DIAG_TYPE::REGISTER);
-    m_dialog->exec(); // Show register dialog
+  AuthDialog dialog(AuthDialog::Register, this);
+  if (dialog.exec() == QDialog::Accepted) {
+    // Retrieve user inputs from the dialog
+    QString username = dialog.getUsername();
+    QString password = dialog.getPassword();
+
+    User &user = User::getInstance();
+    if (user.registerUser(username.toStdString(), password.toStdString())) {
+      QMessageBox::information(this, "Vokab", " Welcome to Vokab " + username);
+      onRegisterOrLoginClicked();
+    } else {
+      QMessageBox::information(this, "Vokab", " username already exist");
+    }
+  }
 }
 
-void MainWindow::createRegisterOrLoginDialog(QWidget* parent, DIAG_TYPE type) {
-    // Create a simple register dialog
-    if (!m_dialog) m_dialog = new QDialog(parent);
-    if (type == MainWindow::DIAG_TYPE::REGISTER)
-			m_dialog->setWindowTitle("Register");
-		else 
-			m_dialog->setWindowTitle("Login");
-
-    QFormLayout* formLayout = new QFormLayout();
-    QLineEdit* usernameField = new QLineEdit();
-    QLineEdit* passwordField = new QLineEdit();
-    passwordField->setEchoMode(QLineEdit::Password);
- 
-    QPushButton *signUpButton;	 		
-    if (type == MainWindow::DIAG_TYPE::REGISTER)
-		  signUpButton = new QPushButton("Register");
-    else 
-      signUpButton = new QPushButton("Login");
-    
-	  QPushButton* cancelButton = new QPushButton("Cancel");
-
-    formLayout->addRow("Username:", usernameField);
-    formLayout->addRow("Password:", passwordField);
-
-    QHBoxLayout* buttonLayout = new QHBoxLayout();
-    buttonLayout->addWidget(signUpButton);
-    buttonLayout->addWidget(cancelButton);
-
-    QVBoxLayout* dialogLayout = new QVBoxLayout(m_dialog);
-    dialogLayout->addLayout(formLayout);
-    dialogLayout->addLayout(buttonLayout);
-
-    connect(cancelButton, &QPushButton::clicked, this, &MainWindow::onCancelClicked);
-   	connect(signUpButton, &QPushButton::clicked, this, &MainWindow::onRegisterOrLoginClicked);
-
-}
-
-void MainWindow::onCancelClicked()
-{
-	m_dialog->reject();
-	delete m_dialog;
-	m_dialog = nullptr;
-}
 void MainWindow::onRegisterOrLoginClicked()
 {
 	replaceCentralWidget();
-	m_dialog->accept();
 	// Add actions to the "File" menu
  
 	m_profile_menu->removeAction(m_login_action);
@@ -151,10 +129,6 @@ void MainWindow::onRegisterOrLoginClicked()
 	if (!m_logout_action) m_logout_action = new QAction("Logout", this);
   connect(m_logout_action, &QAction::triggered, this, &MainWindow::onLogoutClicked); // Close the application
   m_profile_menu->insertAction(m_exit_action, m_logout_action);
-
- 	delete m_dialog;
-	m_dialog = nullptr;
-
 }
 
 void MainWindow::onLogoutClicked()
@@ -179,8 +153,9 @@ void MainWindow::onLogoutClicked()
 void MainWindow::replaceCentralWidget() {
     m_logged_widget = new QWidget(this);
     QVBoxLayout* layout = new QVBoxLayout(m_logged_widget);
-
-    QLabel* thankYouLabel = new QLabel("Thank you for signing up!");
+    User &user = User::getInstance();
+    std::string label = "Hi " + user.getUsername() + " !!";
+    QLabel *thankYouLabel = new QLabel(QString::fromUtf8(label.c_str()));
     thankYouLabel->setAlignment(Qt::AlignCenter);
     thankYouLabel->setStyleSheet("font-size: 24px; font-weight: bold;");
 

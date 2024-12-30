@@ -1,5 +1,5 @@
-#ifndef VOKAB_H
-#define VOKAB_H
+#ifndef MAINWINDOW_H
+#define MAINWINDOW_H
 
 #include <QMainWindow>
 #include <QtWidgets>
@@ -18,19 +18,11 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-  enum DIAG_TYPE{
-    REGISTER,
-    LOGIN
-  };
-
-
 private slots:
 void onLoginClicked();
 void onRegisterClicked();
 void onRegisterOrLoginClicked();
-void onCancelClicked();
 void onLogoutClicked();
-void createRegisterOrLoginDialog(QWidget *parent, MainWindow::DIAG_TYPE type);
 void replaceCentralWidget();
 
 private:
@@ -38,7 +30,6 @@ private:
   QWidget *m_logged_widget = nullptr; 
   QVBoxLayout *m_layout;
   QLabel *m_welcome_label;
-  QDialog *m_dialog = nullptr;
   QMenu* m_profile_menu;
   QAction* m_login_action;
   QAction* m_register_action;
