@@ -1,6 +1,9 @@
-#include "mainWindow.h"
+#include "MainWindow.h"
+#include "VocabFileHandler.h"
 
 #include <QApplication>
+
+VocabFileHandler *VocabFileHandler::instance = nullptr;
 
 int main(int argc, char *argv[])
 {

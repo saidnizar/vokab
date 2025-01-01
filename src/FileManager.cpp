@@ -3,24 +3,29 @@
 FileManager::FileManager(const QString &directoryName, const QString &fileName)
     : dirName(directoryName), fileName(fileName) {
   // Get the user's home directory
-  QString homeDir =
-      QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+  QString homeDir;
+  if (directoryName == "tmp") {
+    filePath = "/tmp/" + fileName;
+  } else {
+    QString homeDir =
+        QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
 
-  // Construct the full directory path
-  dirPath = homeDir + QDir::separator() + dirName;
+    // Construct the full directory path
+    dirPath = homeDir + QDir::separator() + dirName;
 
-  // Ensure the directory exists
-  QDir dir(dirPath);
-  if (!dir.exists()) {
-    if (!dir.mkpath(".")) {
-      std::cerr << "Failed to create directory: " << dirPath.toStdString()
-                << std::endl;
-      throw std::runtime_error("Directory creation failed");
+    // Ensure the directory exists
+    QDir dir(dirPath);
+    if (!dir.exists()) {
+      if (!dir.mkpath(".")) {
+        std::cerr << "Failed to create directory: " << dirPath.toStdString()
+                  << std::endl;
+        throw std::runtime_error("Directory creation failed");
+      }
     }
-  }
 
-  // Construct the full file path
-  filePath = dirPath + QDir::separator() + fileName;
+    // Construct the full file path
+    filePath = dirPath + QDir::separator() + fileName;
+  }
 }
 
 void FileManager::saveFile(json &jsonData) {

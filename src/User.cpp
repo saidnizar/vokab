@@ -1,5 +1,5 @@
 
-#include "user.h"
+#include "User.h"
 
 void User::createUser(const std::string &username, uint64_t hashedPwd,
                       uint64_t userId) {
@@ -51,6 +51,7 @@ bool User::registerUser(const std::string &username, const std::string &pwd) {
     m_id = hash_pwd;
     m_loggedIn = true;
     m_username = username;
+    saveSession();
     return true;
   }
   return false;
@@ -63,7 +64,48 @@ bool User::logInUser(const std::string &username, const std::string &pwd) {
     m_loggedIn = true;
     m_id = hash_pwd;
     m_username = username;
+    saveSession();
     return true;
   }
   return false;
+}
+
+void User::logoutUser() {
+  if (m_loggedIn) {
+    m_loggedIn = false;
+    destroySession();
+  }
+}
+
+bool User::loadPreviousSession() {
+  json session = m_session.loadFile();
+  // Search for the user in the JSON array
+  for (const auto &item : session.items()) {
+    if (findUser(item.value()["username"].get<std::string>(),
+                 item.value()["pwd"].get<uint64_t>())) {
+      m_loggedIn = true;
+      m_id = item.value()["pwd"].get<uint64_t>();
+      m_username = item.value()["username"].get<std::string>();
+      return true;
+    }
+    return false;
+  }
+  return false;
+}
+
+void User::saveSession() {
+  if (m_loggedIn) {
+    json session;
+    session["username"] = m_username;
+    session["pwd"] = m_id;
+    session["userId"] = m_id;
+    // Save back to the file
+    json jsonArray = json::array({session}); // FileManager expect an Array
+    m_session.saveFile(jsonArray);
+  }
+}
+
+void User::destroySession() {
+  json jsonArray = json::array(); // FileManager expect an Array
+  m_session.saveFile(jsonArray);
 }

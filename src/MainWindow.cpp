@@ -1,10 +1,14 @@
-#include <iostream>
 #include <QFormLayout>
 #include <QLineEdit>
+#include <QPixmap>
+#include <QWidgetAction>
+#include <iostream>
 
-#include "authDialog.h"
-#include "mainWindow.h"
-#include "user.h"
+#include "AuthDialog.h"
+#include "HomeWidget.h"
+#include "MainWindow.h"
+#include "User.h"
+#include "VocabFileHandler.h"
 
 using namespace std;
 MainWindow::MainWindow(QWidget *parent)
@@ -20,9 +24,18 @@ MainWindow::MainWindow(QWidget *parent)
    m_welcome_label = new QLabel("Welcome to the Vokab Project!");
    m_welcome_label->setAlignment(Qt::AlignCenter); // Center the text
    m_welcome_label->setStyleSheet("font-size: 24px; font-weight: bold;"); // Customize the style
+   // Load the logo as a QPixmap
+   QPixmap logoPixmap("../vokab.png");
 
+   logoPixmap =
+       logoPixmap.scaled(200, 200, Qt::KeepAspectRatio); // Resize if needed
+   // Create a QLabel to display the logo
+   QLabel *logoLabel = new QLabel();
+   logoLabel->setPixmap(logoPixmap);
+   logoLabel->setAlignment(Qt::AlignCenter); // Center align the logo
 
    // Add widgets to the layout
+   m_layout->addWidget(logoLabel);
    m_layout->addWidget(m_welcome_label);
 
 
@@ -38,8 +51,23 @@ MainWindow::MainWindow(QWidget *parent)
 
  
   // Create the menu bar
-   QMenuBar* menuBar = new QMenuBar(this);
-  
+   QMenuBar *menuBar = new QMenuBar(this);
+
+   /*  QPixmap logoPixmap("../vokab.png");
+     logoPixmap = logoPixmap.scaled(50, 50, Qt::KeepAspectRatio); // Resize if
+     needed
+
+           // Create a QLabel to hold the logo
+           QLabel* logoLabel = new QLabel();
+           logoLabel->setPixmap(logoPixmap);
+
+           // Use QWidgetAction to add QLabel to QMenuBar
+           QWidgetAction* logoAction = new QWidgetAction(menuBar);
+           logoAction->setDefaultWidget(logoLabel);
+
+           // Add the logo to the menu bar
+           menuBar->addAction(logoAction);
+   */
    // Create menus
    m_profile_menu = menuBar->addMenu("Profile");
    QMenu* helpMenu = menuBar->addMenu("Help");
@@ -69,10 +97,11 @@ MainWindow::MainWindow(QWidget *parent)
    connect(m_exit_action, &QAction::triggered, this, &QMainWindow::close); // Close the application
    connect(m_login_action, &QAction::triggered, this, &MainWindow::onLoginClicked); // Close the application
    connect(m_register_action, &QAction::triggered, this, &MainWindow::onRegisterClicked); // Close the application
-   connect(aboutAction, &QAction::triggered, [this]() {
-       QMessageBox::information(this, "About", "This is a sample application with a menu bar.");
-       });
-  
+   connect(aboutAction, &QAction::triggered,
+           [this]() { QMessageBox::information(this, "About", "vokab v1.0"); });
+   User &user = User::getInstance();
+   if (user.loadPreviousSession())
+     onRegisterOrLoginClicked();
 }
 
 MainWindow::~MainWindow()
@@ -93,12 +122,10 @@ void MainWindow::onLoginClicked() {
     QString username = dialog.getUsername();
     QString password = dialog.getPassword();
     User &user = User::getInstance();
-    if (user.logInUser(username.toStdString(), password.toStdString())) {
-      QMessageBox::information(this, "Vokab", " Welcome to Vokab " + username);
+    if (user.logInUser(username.toStdString(), password.toStdString()))
       onRegisterOrLoginClicked();
-    } else {
+    else
       QMessageBox::information(this, "Vokab", " user does not exist");
-    }
   }
 }
 
@@ -110,12 +137,10 @@ void MainWindow::onRegisterClicked() {
     QString password = dialog.getPassword();
 
     User &user = User::getInstance();
-    if (user.registerUser(username.toStdString(), password.toStdString())) {
-      QMessageBox::information(this, "Vokab", " Welcome to Vokab " + username);
+    if (user.registerUser(username.toStdString(), password.toStdString()))
       onRegisterOrLoginClicked();
-    } else {
+    else
       QMessageBox::information(this, "Vokab", " username already exist");
-    }
   }
 }
 
@@ -145,29 +170,26 @@ void MainWindow::onLogoutClicked()
     setCentralWidget(m_central_widget);
 
 		m_profile_menu->removeAction(m_logout_action);
-	m_profile_menu->insertAction(m_exit_action, m_register_action);
-  m_profile_menu->insertAction(m_register_action, m_login_action);
+                m_profile_menu->insertAction(m_exit_action, m_register_action);
+                m_profile_menu->insertAction(m_register_action, m_login_action);
+
+                User &user = User::getInstance();
+                user.logoutUser();
+                VocabFileHandler *vocab_handler =
+                    VocabFileHandler::getInstance();
+                vocab_handler->destroyInstance();
 }
 
 
 void MainWindow::replaceCentralWidget() {
-    m_logged_widget = new QWidget(this);
-    QVBoxLayout* layout = new QVBoxLayout(m_logged_widget);
-    User &user = User::getInstance();
-    std::string label = "Hi " + user.getUsername() + " !!";
-    QLabel *thankYouLabel = new QLabel(QString::fromUtf8(label.c_str()));
-    thankYouLabel->setAlignment(Qt::AlignCenter);
-    thankYouLabel->setStyleSheet("font-size: 24px; font-weight: bold;");
 
-    layout->addWidget(thankYouLabel);
-    layout->setAlignment(Qt::AlignCenter);
+  HomeWidget *homeWidget = new HomeWidget(this);
 
- 
-	// Remove the current central widget
-    QWidget* oldWidget = takeCentralWidget();
+  // Remove the current central widget
+  QWidget *oldWidget = takeCentralWidget();
 
-		oldWidget->setParent(nullptr);
-    // Set the new central widget
-    setCentralWidget(m_logged_widget);
+  oldWidget->setParent(nullptr);
+  // Set the new central widget
+  setCentralWidget(homeWidget);
 }
 
